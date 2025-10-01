@@ -68,7 +68,7 @@ func (h *EmailHandler) GetEmailStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var email models.Email
-	err = h.emailService.db.QueryRow(`
+	err = h.emailService.DB.QueryRow(`
 		SELECT id, user_id, from_email, to_email, subject, status, ses_message_id, error_message, sent_at, created_at
 		FROM emails WHERE id = $1 AND user_id = $2
 	`, emailID, userID).Scan(
@@ -100,7 +100,7 @@ func (h *EmailHandler) GetEmailLogs(w http.ResponseWriter, r *http.Request) {
 
 	// Verify email belongs to user
 	var count int
-	err = h.emailService.db.QueryRow(`
+	err = h.emailService.DB.QueryRow(`
 		SELECT COUNT(*) FROM emails WHERE id = $1 AND user_id = $2
 	`, emailID, userID).Scan(&count)
 	if err != nil || count == 0 {
@@ -108,7 +108,7 @@ func (h *EmailHandler) GetEmailLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.emailService.db.Query(`
+	rows, err := h.emailService.DB.Query(`
 		SELECT id, email_id, event_type, created_at
 		FROM email_logs WHERE email_id = $1
 		ORDER BY created_at DESC

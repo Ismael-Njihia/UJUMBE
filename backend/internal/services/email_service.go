@@ -15,14 +15,14 @@ import (
 )
 
 type EmailService struct {
-	db       *database.DB
+	DB       *database.DB
 	ses      *ses.SESClient
 	producer *kafka.Producer
 }
 
 func NewEmailService(db *database.DB, sesClient *ses.SESClient, producer *kafka.Producer) *EmailService {
 	return &EmailService{
-		db:       db,
+		DB:       db,
 		ses:      sesClient,
 		producer: producer,
 	}
@@ -65,7 +65,7 @@ func (s *EmailService) SendEmail(userID uuid.UUID, req models.SendEmailRequest) 
 
 	// Create email record
 	emailID := uuid.New()
-	_, err = s.db.Exec(`
+	_, err = s.DB.Exec(`
 		INSERT INTO emails (id, user_id, template_id, from_email, to_email, subject, html_body, text_body, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`, emailID, userID, templateID, req.From, req.To, subject, htmlBody, textBody, "pending")
@@ -90,7 +90,7 @@ func (s *EmailService) SendEmail(userID uuid.UUID, req models.SendEmailRequest) 
 	err = s.producer.ProduceEmailJob(job)
 	if err != nil {
 		// Update status to failed
-		s.db.Exec("UPDATE emails SET status = $1, error_message = $2 WHERE id = $3", "failed", err.Error(), emailID)
+		s.DB.Exec("UPDATE emails SET status = $1, error_message = $2 WHERE id = $3", "failed", err.Error(), emailID)
 		return nil, fmt.Errorf("failed to queue email: %w", err)
 	}
 
@@ -109,14 +109,14 @@ func (s *EmailService) ProcessEmailJob(job kafka.EmailJob) error {
 	messageID, err := s.ses.SendEmail(job.From, job.To, job.Subject, job.HTMLBody, job.TextBody)
 	if err != nil {
 		// Update status to failed
-		s.db.Exec("UPDATE emails SET status = $1, error_message = $2 WHERE id = $3", "failed", err.Error(), job.EmailID)
+		s.DB.Exec("UPDATE emails SET status = $1, error_message = $2 WHERE id = $3", "failed", err.Error(), job.EmailID)
 		s.CreateEmailLog(job.EmailID, "failed", map[string]interface{}{"error": err.Error()})
 		return err
 	}
 
 	// Update status to sent
 	now := time.Now()
-	_, err = s.db.Exec("UPDATE emails SET status = $1, ses_message_id = $2, sent_at = $3 WHERE id = $4", "sent", messageID, now, job.EmailID)
+	_, err = s.DB.Exec("UPDATE emails SET status = $1, ses_message_id = $2, sent_at = $3 WHERE id = $4", "sent", messageID, now, job.EmailID)
 	if err != nil {
 		return fmt.Errorf("failed to update email status: %w", err)
 	}
@@ -126,7 +126,7 @@ func (s *EmailService) ProcessEmailJob(job kafka.EmailJob) error {
 }
 
 func (s *EmailService) DeductQuota(userID uuid.UUID) (int, error) {
-	tx, err := s.db.Begin()
+	tx, err := s.DB.Begin()
 	if err != nil {
 		return 0, err
 	}
@@ -189,7 +189,7 @@ func (s *EmailService) DeductQuota(userID uuid.UUID) (int, error) {
 
 func (s *EmailService) IsDomainVerified(userID uuid.UUID, domain string) bool {
 	var verified bool
-	err := s.db.QueryRow(`
+	err := s.DB.QueryRow(`
 		SELECT verified FROM verified_domains 
 		WHERE user_id = $1 AND domain = $2 AND verified = true
 	`, userID, domain).Scan(&verified)
@@ -198,7 +198,7 @@ func (s *EmailService) IsDomainVerified(userID uuid.UUID, domain string) bool {
 
 func (s *EmailService) GetTemplate(userID uuid.UUID, templateID uuid.UUID) (*models.EmailTemplate, error) {
 	var template models.EmailTemplate
-	err := s.db.QueryRow(`
+	err := s.DB.QueryRow(`
 		SELECT id, user_id, name, subject, html_body, text_body, created_at, updated_at
 		FROM email_templates WHERE id = $1 AND user_id = $2
 	`, templateID, userID).Scan(
@@ -214,7 +214,7 @@ func (s *EmailService) GetTemplate(userID uuid.UUID, templateID uuid.UUID) (*mod
 func (s *EmailService) CreateEmailLog(emailID uuid.UUID, eventType string, eventData map[string]interface{}) error {
 	// For simplicity, we'll store event data as a string representation
 	// In production, you'd use JSONB
-	_, err := s.db.Exec(`
+	_, err := s.DB.Exec(`
 		INSERT INTO email_logs (id, email_id, event_type, event_data)
 		VALUES ($1, $2, $3, NULL)
 	`, uuid.New(), emailID, eventType)
@@ -223,7 +223,7 @@ func (s *EmailService) CreateEmailLog(emailID uuid.UUID, eventType string, event
 
 func (s *EmailService) GetUserQuota(userID uuid.UUID) (*models.UserQuota, error) {
 	var quota models.UserQuota
-	err := s.db.QueryRow(`
+	err := s.DB.QueryRow(`
 		SELECT id, user_id, free_emails_remaining, paid_emails_balance, monthly_reset_date, created_at, updated_at
 		FROM user_quotas WHERE user_id = $1
 	`, userID).Scan(
@@ -232,7 +232,7 @@ func (s *EmailService) GetUserQuota(userID uuid.UUID) (*models.UserQuota, error)
 	)
 	if err == sql.ErrNoRows {
 		// Create default quota
-		_, err = s.db.Exec(`
+		_, err = s.DB.Exec(`
 			INSERT INTO user_quotas (user_id, free_emails_remaining, paid_emails_balance, monthly_reset_date)
 			VALUES ($1, 100, 0, CURRENT_DATE)
 		`, userID)
@@ -251,7 +251,7 @@ func (s *EmailService) GetAnalytics(userID uuid.UUID) (*models.AnalyticsResponse
 	var analytics models.AnalyticsResponse
 
 	// Get email counts
-	err := s.db.QueryRow(`
+	err := s.DB.QueryRow(`
 		SELECT 
 			COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent,
 			COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
