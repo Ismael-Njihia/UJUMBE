@@ -83,7 +83,7 @@ func (s *Service) Login(email, password string) (string, *models.User, error) {
 		 FROM users WHERE email = $1`,
 		email,
 	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.EmailQuota, &user.EmailsSent, &user.Balance, &user.CreatedAt, &user.UpdatedAt)
-	
+
 	if err == sql.ErrNoRows {
 		return "", nil, ErrInvalidCredentials
 	}
@@ -223,7 +223,7 @@ func (s *Service) GetUser(userID string) (*models.User, error) {
 		 FROM users WHERE id = $1`,
 		userID,
 	).Scan(&user.ID, &user.Email, &user.Name, &user.EmailQuota, &user.EmailsSent, &user.Balance, &user.CreatedAt, &user.UpdatedAt)
-	
+
 	if err != nil {
 		return nil, err
 	}

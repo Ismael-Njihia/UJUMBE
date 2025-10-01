@@ -323,12 +323,12 @@ func (s *Service) GetDashboardStats(userID string) (map[string]interface{}, erro
 	}
 
 	stats := map[string]interface{}{
-		"email_quota":   emailQuota,
-		"emails_sent":   emailsSent,
-		"balance":       balance,
-		"total_sent":    totalSent,
-		"total_failed":  totalFailed,
-		"total_bounced": totalBounced,
+		"email_quota":     emailQuota,
+		"emails_sent":     emailsSent,
+		"balance":         balance,
+		"total_sent":      totalSent,
+		"total_failed":    totalFailed,
+		"total_bounced":   totalBounced,
 		"quota_remaining": emailQuota - emailsSent,
 	}
 

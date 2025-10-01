@@ -9,17 +9,17 @@ import (
 
 type Config struct {
 	// Database
-	DatabaseURL  string
-	DBHost       string
-	DBPort       string
-	DBUser       string
-	DBPassword   string
-	DBName       string
+	DatabaseURL string
+	DBHost      string
+	DBPort      string
+	DBUser      string
+	DBPassword  string
+	DBName      string
 
 	// Kafka
-	KafkaBrokers   string
+	KafkaBrokers    string
 	KafkaEmailTopic string
-	KafkaGroupID   string
+	KafkaGroupID    string
 
 	// AWS SES
 	AWSRegion          string
@@ -36,10 +36,10 @@ type Config struct {
 	MpesaEnvironment    string
 
 	// Application
-	AppEnv         string
-	AppPort        string
-	JWTSecret      string
-	APIBaseURL     string
+	AppEnv     string
+	AppPort    string
+	JWTSecret  string
+	APIBaseURL string
 
 	// Email Quotas
 	FreeEmailQuota    int

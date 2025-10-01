@@ -74,7 +74,7 @@ type Transaction struct {
 	UserID          string    `json:"user_id"`
 	Amount          float64   `json:"amount"`
 	Currency        string    `json:"currency"`
-	Type            string    `json:"type"` // mpesa, credit
+	Type            string    `json:"type"`   // mpesa, credit
 	Status          string    `json:"status"` // pending, completed, failed
 	MpesaReceiptNo  string    `json:"mpesa_receipt_no,omitempty"`
 	PhoneNumber     string    `json:"phone_number,omitempty"`
